@@ -128,7 +128,13 @@ with col_bar1:
       },
   )
   fig_hyp.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
-  fig_hyp.update_yaxes(range=[0, max(hypertension_stroke["stroke_percent"] * 1.3, 10)])
+  # 수정된 부분: .max()를 추가하여 시리즈의 최댓값 추출
+  fig_hyp.update_yaxes(
+      range=[
+          0,
+          max(hypertension_stroke["stroke_percent"].max() * 1.3, 10),
+      ]
+  )
   st.plotly_chart(fig_hyp, use_container_width=True)
 
 with col_bar2:
@@ -149,46 +155,4 @@ with col_bar2:
           "stroke_percent": "뇌졸중 비율 (%)",
       },
   )
-  fig_heart.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
-  fig_heart.update_yaxes(range=[0, max(heart_stroke["stroke_percent"] * 1.3, 10)])
-  st.plotly_chart(fig_heart, use_container_width=True)
-
-st.markdown("---")
-
-# 4. 체질량지수(bmi) 결측치 그룹과 전체 뇌졸중 비율 비교
-st.subheader("4. 체질량지수(bmi) 결측치 그룹 vs 전체 뇌졸중 비율 비교")
-
-total_stroke_rate = df["stroke"].mean() * 100
-
-bmi_null_df = df[df["bmi"].isnull()]
-if len(bmi_null_df) > 0:
-  bmi_null_stroke_rate = bmi_null_df["stroke"].mean() * 100
-else:
-  bmi_null_stroke_rate = 0.0
-
-comparison_data = pd.DataFrame({
-    "구분": ["전체 데이터", "bmi 비어 있는 사람들"],
-    "인원수": [len(df), len(bmi_null_df)],
-    "뇌졸중 비율 (%)": [total_stroke_rate, bmi_null_stroke_rate],
-})
-
-st.dataframe(
-    comparison_data.style.format({"뇌졸중 비율 (%)": "{:.2f}%"}),
-    use_container_width=True,
-    hide_index=True,
-)
-
-st.markdown("---")
-
-# 5. 흡연 상태(smoking_status) 값별 인원수 표
-st.subheader("5. 흡연 상태(Smoking Status)별 인원수")
-
-smoking_counts = (
-    df["smoking_status"]
-    .fillna("Unknown (결측치)")
-    .value_counts()
-    .reset_index()
-)
-smoking_counts.columns = ["흡연 상태", "사람 수"]
-
-st.dataframe(smoking_counts, use_container_width=True, hide_index=True)
+  fig_heart.update_traces(texttemplate="%{text:.2f}%",
