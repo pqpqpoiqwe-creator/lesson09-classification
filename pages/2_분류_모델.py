@@ -66,7 +66,6 @@ kor_to_eng = {v: k for k, v in feature_map.items()}
 selected_features = [kor_to_eng[k] for k in selected_kor_features]
 
 # 2. 전처리 및 데이터 분할 (지정된 조건)
-# - 번호순 정렬 후 열 명씩 묶어 앞 세 명 테스트용 고정 (나머지 칠 명 훈련)
 work_df = df.copy()
 if "id" in work_df.columns:
   work_df = work_df.sort_values(by="id").reset_index(drop=True)
@@ -302,4 +301,46 @@ st.subheader("4. 의사결정트리 구조 및 질문 분석")
 feature_names_kor = [feature_map[f] for f in selected_features]
 
 
-def get_dt_dot(tree_clf, feature_names
+def get_dt_dot(tree_clf, feature_names):
+  from sklearn.tree import export_graphviz
+
+  dot_data = export_graphviz(
+      tree_clf,
+      out_file=None,
+      feature_names=feature_names,
+      class_names=["아님(0)", "뇌졸중(1)"],
+      filled=True,
+      rounded=True,
+      special_characters=True,
+  )
+  return dot_data
+
+
+try:
+  dot_string = get_dt_dot(dt_model, feature_names_kor)
+  st.graphviz_chart(dot_string)
+except Exception:
+  tree_text = export_text(dt_model, feature_names=feature_names_kor)
+  st.text(tree_text)
+
+# 나무 분석 요약
+n_nodes = dt_model.tree_.node_count
+n_leaves = dt_model.tree_.n_leaves
+left_values = dt_model.tree_.value
+negative_leaves = sum(
+    1
+    for i in range(n_nodes)
+    if dt_model.tree_.children_left[i] == -1
+    and np.argmax(left_values[i]) == 0
+)
+
+used_features_indices = set(f for f in dt_model.tree_.feature if f != -2)
+actual_asked_features = [feature_names_kor[i] for i in used_features_indices]
+
+st.markdown("##### 📌 의사결정트리 분석 요약")
+st.markdown(
+    f"- **답을 내는 마디(리프 노드) 총 개수**: {n_leaves}개<br>- **그 중"
+    f" '아님'이라고 답하는 칸 수**: {negative_leaves}개<br>- **이 나무가"
+    f" 실제로 질문에 사용한 속성**: {', '.join(actual_asked_features) if actual_asked_features else '없음'}",
+    unsafe_allow_html=True,
+)
